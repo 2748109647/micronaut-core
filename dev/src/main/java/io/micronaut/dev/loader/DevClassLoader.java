@@ -64,6 +64,7 @@ public final class DevClassLoader extends ClassLoader {
         registerAsParallelCapable();
     }
 
+    private final List<Path> liveRoots;
     private final List<Path> sources;
     private final Path generationsDir;
     private final AtomicReference<GenerationClassLoader> current;
@@ -77,7 +78,20 @@ public final class DevClassLoader extends ClassLoader {
      * @param generationsDir The loader's own directory for the snapshot each generation loads from; emptied first
      */
     public DevClassLoader(@Nullable ClassLoader parent, List<Path> roots, Path generationsDir) {
+        this(parent, List.of(), roots, generationsDir);
+    }
+
+    /**
+     * Creates the loader over its first generation, with directories read live ahead of the snapshotted ones.
+     *
+     * @param parent The parent loader, holding the libraries
+     * @param liveRoots The directories read as they are, searched first: the resource roots the developer edits
+     * @param roots The class and resource directories of the reloadable tier, which the build writes to, snapshotted per generation
+     * @param generationsDir The loader's own directory for the snapshots; emptied first
+     */
+    public DevClassLoader(@Nullable ClassLoader parent, List<Path> liveRoots, List<Path> roots, Path generationsDir) {
         super("micronaut-dev", parent);
+        this.liveRoots = List.copyOf(liveRoots);
         this.sources = List.copyOf(roots);
         this.generationsDir = generationsDir;
         try {
@@ -96,7 +110,7 @@ public final class DevClassLoader extends ClassLoader {
     }
 
     private GenerationClassLoader snapshot(int generation, List<Path> roots) {
-        return GenerationClassLoader.snapshot(generation, roots, generationsDir.resolve(String.valueOf(generation)), getParent());
+        return GenerationClassLoader.snapshot(generation, liveRoots, roots, generationsDir.resolve(String.valueOf(generation)), getParent());
     }
 
     /**
@@ -104,6 +118,13 @@ public final class DevClassLoader extends ClassLoader {
      */
     public List<Path> sources() {
         return sources;
+    }
+
+    /**
+     * @return The directories every generation reads live, ahead of its snapshot
+     */
+    public List<Path> liveRoots() {
+        return liveRoots;
     }
 
     /**

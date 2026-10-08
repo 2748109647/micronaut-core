@@ -1576,7 +1576,7 @@ public final class DevRuntime implements Closeable {
             return;
         }
         ApplicationContext old = context;
-        classLoader.swap();
+        GenerationClassLoader retired = classLoader.swap();
         Collection<BeanRegistration<?>> retained = List.of();
         if (old != null) {
             ClassChangeEvent event = new ClassChangeEvent(this, classLoader.retiredLoaders(), classLoader.current(), changeSet.classes(), ReloadStrategy.RESTART);
